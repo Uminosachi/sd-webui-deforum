@@ -384,7 +384,7 @@ def render_animation(args, anim_args, video_args, parseq_args, loop_args, contro
                 color_match_sample = cv2.cvtColor(color_match_sample, cv2.COLOR_RGB2BGR)
 
         # after 1st frame, prev_img exists
-        if prev_img is not None:
+        if prev_img is not None and not using_vid_init:
             # apply transforms to previous frame
             prev_img, depth = anim_frame_warp(prev_img, args, anim_args, keys, frame_idx, depth_model, depth=None, device=root.device, half_precision=root.half_precision)
 
@@ -476,6 +476,25 @@ def render_animation(args, anim_args, video_args, parseq_args, loop_args, contro
             print(f"Using video init frame {init_frame}")
             args.init_image = init_frame
             args.strength = max(0.0, min(1.0, strength))
+            
+            def warp_flow(flow, img):
+                h, w = flow.shape[:2]
+                flow = -flow
+                flow[:,:,0] += np.arange(w)
+                flow[:,:,1] += np.arange(h)[:,np.newaxis]
+                res = cv2.remap(img, flow, None, cv2.INTER_LINEAR)
+                return res
+            
+            if prev_img is not None:
+                gray1 = cv2.cvtColor(cv2.imread(get_next_frame(args.outdir, anim_args.video_init_path, frame_idx-1, False)), cv2.COLOR_BGR2GRAY)
+                gray2 = cv2.cvtColor(cv2.imread(init_frame), cv2.COLOR_BGR2GRAY)
+
+                flow = cv2.calcOpticalFlowFarneback(gray1, gray2, None, pyr_scale=0.5, levels=3, winsize=15, iterations=3, poly_n=5, poly_sigma=1.2, flags=0)
+
+                prev_img = warp_flow(flow, prev_img)
+                
+                args.init_sample = Image.fromarray(cv2.cvtColor(prev_img, cv2.COLOR_BGR2RGB))
+            
         if anim_args.use_mask_video:
             args.mask_file = get_mask_from_file(get_next_frame(args.outdir, anim_args.video_mask_path, frame_idx, True), args)
             args.noise_mask = get_mask_from_file(get_next_frame(args.outdir, anim_args.video_mask_path, frame_idx, True), args)
@@ -576,8 +595,9 @@ def render_animation(args, anim_args, video_args, parseq_args, loop_args, contro
             color_match_sample = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
 
         opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        if not using_vid_init:
-            prev_img = opencv_image
+        # if not using_vid_init:
+        #     prev_img = opencv_image
+        prev_img = opencv_image
 
         if turbo_steps > 1:
             turbo_prev_image, turbo_prev_frame_idx = turbo_next_image, turbo_next_frame_idx

@@ -213,6 +213,15 @@ def process_with_controlnet(p, args, anim_args, loop_args, controlnet_args, root
             # Not first frame, use previous img (init_sample)
             elif frame_idx > 0 and args.init_sample:
                 cn_image_np = np.array(args.init_sample).astype('uint8')
+                
+                str_frame_idx = f"{frame_idx:09}"
+                debug_out_name = f'{str_frame_idx}_controlnet_{cn_idx}_init_sample.png'
+                output_dir = os.path.join(args.outdir, 'debug')
+                os.makedirs(output_dir, exist_ok=True)
+                debug_out_path = os.path.join(output_dir, debug_out_name)
+                print(f'Saving ControlNet {cn_idx} init_sample image at {debug_out_path}')
+                Image.fromarray(cn_image_np).save(debug_out_path)
+                
         else: # loopback mode is DISABLED
             cn_inputframes = os.path.join(args.outdir, f'controlnet_{cn_idx}_inputframes') # set input frames folder path
             if os.path.exists(cn_inputframes):
