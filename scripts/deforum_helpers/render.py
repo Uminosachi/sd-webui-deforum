@@ -489,9 +489,9 @@ def render_animation(args, anim_args, video_args, parseq_args, loop_args, contro
                 flow = cv2.calcOpticalFlowFarneback(gray1, gray2, None, pyr_scale=0.5, levels=3, winsize=15, iterations=3, poly_n=5, poly_sigma=1.2, flags=0)
 
                 prev_img = warp_flow(flow, prev_img)
-        
+
                 args.init_sample = Image.fromarray(cv2.cvtColor(prev_img, cv2.COLOR_BGR2RGB))
-            
+        
         if anim_args.use_mask_video:
             args.mask_file = get_mask_from_file(get_next_frame(args.outdir, anim_args.video_mask_path, frame_idx, True), args)
             args.noise_mask = get_mask_from_file(get_next_frame(args.outdir, anim_args.video_mask_path, frame_idx, True), args)
